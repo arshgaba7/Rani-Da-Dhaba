@@ -2,11 +2,12 @@
 
 {% block content %}
 
-<style>
+  <style>
+    /* Layout for chef photo + order form side-by-side */
     .order-layout {
         display: flex;
         flex-wrap: wrap;
-        gap: 18px;
+        gap: 20px;
         align-items: flex-start;
     }
     .chef-card {
@@ -15,182 +16,133 @@
     }
     .chef-photo {
         width: 100%;
-        border-radius: 14px;
+        border-radius: 16px;
         object-fit: cover;
-        box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.25);
     }
     .chef-caption {
-        text-align: center;
         font-size: 13px;
+        text-align: center;
         margin-top: 6px;
-        color: var(--text-light);
+        color: var(--muted);
     }
     .order-main {
         flex: 1;
         min-width: 260px;
     }
-
-    /* floating bar */
-    .floating-bar {
-        position: fixed;
-        right: 24px;
-        bottom: 24px;
-        z-index: 200;
-        background: #ffffff;
-        border-radius: 999px;
-        padding: 8px 16px;
-        box-shadow: 0 6px 14px rgba(0,0,0,0.35);
-        display: none; /* shown when total > 0 */
-        align-items: center;
-        gap: 10px;
-    }
-    .floating-bar-count {
-        font-size: 13px;
-        font-weight: 600;
-        color: var(--primary-dark);
-    }
-    .floating-bar-count span {
-        color: var(--accent);
-    }
-
-    @media (max-width: 640px) {
+    @media (max-width: 768px) {
         .order-layout {
             flex-direction: column;
         }
         .chef-card {
             max-width: 100%;
         }
-        .floating-bar {
-            left: 12px;
-            right: 12px;
-            justify-content: space-between;
-        }
     }
-</style>
+  </style>
 
-<h1>Place Your Order</h1>
-<p class="page-subtitle">
-    Tap <strong>Add</strong> to choose items. If you tap by mistake, use <strong>Remove</strong>.  
-    When you’re ready, hit <strong>Send to kitchen</strong>.
-</p>
+  <h1 class="page-title">Place Your Order</h1>
+  <p class="page-subtitle">
+      Tap <strong>Add</strong> beside items you want. If you tap by mistake, use <strong>Remove</strong>.
+      When you submit, the order pops up instantly on the Kitchen screen.
+  </p>
 
-<div class="order-layout">
-    <!-- Left: chef -->
-    <div class="card chef-card">
-        <img src="{{ url_for('static', filename='chef.jpg') }}" alt="Chef at Maharani Dhaba" class="chef-photo">
-        <div class="chef-caption">Chef in charge of Maharani Dhaba ❤️</div>
-    </div>
-
-    <!-- Right: form -->
-    <div class="order-main">
-        {% if success_order %}
-          <div class="success-banner">
-              Order <strong>#{{ success_order.id }}</strong> placed successfully
-              {% if success_order.created_at %} at {{ success_order.created_at }}{% endif %}.
-              Sent to the kitchen!
+  <div class="order-layout">
+      <!-- LEFT: Chef photo -->
+      <div class="card chef-card">
+          <img src="{{ url_for('static', filename='chef.jpg') }}" alt="Chef at Maharani Dhaba" class="chef-photo">
+          <div class="chef-caption">
+              Chef in charge of Maharani Dhaba ❤️
           </div>
-        {% endif %}
+      </div>
 
-        <form method="POST" action="{{ url_for('submit_order') }}" id="order-form">
-            <div class="card">
-                <div class="card-header">
-                    <span>Customer details</span>
-                    <span class="pill">Optional but helpful 🙂</span>
-                </div>
-                <div class="form-row">
-                    <div class="form-field">
-                        <label for="customer_name">Name</label>
-                        <input type="text" id="customer_name" name="customer_name" placeholder="Guest">
-                    </div>
-                    <div class="form-field">
-                        <label for="table">Table / Room</label>
-                        <input type="text" id="table" name="table" placeholder="e.g. Living Room, Table 3">
-                    </div>
-                </div>
+      <!-- RIGHT: Order form -->
+      <div class="order-main">
+          {% if success_order %}
+            <div class="success-banner">
+                <strong>Order #{{ success_order.id }}</strong> placed successfully
+                {% if success_order.created_at %} at {{ success_order.created_at }}{% endif %}.
+                It’s on its way to the kitchen!
             </div>
+          {% endif %}
 
-            <div class="card">
-                <div class="card-header">
-                    <span>Menu</span>
-                    <span class="pill">Tap “Add” to add items, “Remove” to undo</span>
-                </div>
-
-                <div class="category-grid">
-                    {% for category in categories %}
-                      <div class="category-card">
-                          <div class="category-title">{{ category.name }}</div>
-                          <div>
-                              {% for item in category["items"] %}
-                                <div class="menu-item-row">
-                                    <span class="menu-item-name">{{ item.name }}</span>
-                                    <div class="menu-item-actions">
-                                        <!-- hidden input -->
-                                        <input type="hidden"
-                                               name="qty_{{ item.id }}"
-                                               id="qty_{{ item.id }}"
-                                               value="0">
-                                        <span class="badge-count" id="display_qty_{{ item.id }}">0</span>
-
-                                        <button type="button"
-                                                class="btn btn-small add-btn"
-                                                data-target="{{ item.id }}">
-                                            + Add
-                                        </button>
-
-                                        <button type="button"
-                                                class="btn btn-small btn-secondary remove-btn"
-                                                id="remove_{{ item.id }}"
-                                                data-target="{{ item.id }}"
-                                                style="display:none;">
-                                            − Remove
-                                        </button>
-                                    </div>
-                                </div>
-                              {% endfor %}
-                          </div>
+          <form method="POST" action="{{ url_for('submit_order') }}">
+              <div class="card">
+                  <div class="card-header">
+                      <span>Customer details</span>
+                      <span class="pill">Optional but helpful 🙂</span>
+                  </div>
+                  <div class="form-row">
+                      <div class="form-field">
+                          <label for="customer_name">Name</label>
+                          <input type="text" id="customer_name" name="customer_name" placeholder="Guest">
                       </div>
-                    {% endfor %}
-                </div>
-            </div>
+                      <div class="form-field">
+                          <label for="table">Table / Room</label>
+                          <input type="text" id="table" name="table" placeholder="e.g. Living Room, Table 3">
+                      </div>
+                  </div>
+              </div>
 
-            <!-- FLOATING BAR (inside form so it submits the form) -->
-            <div class="floating-bar" id="floating-bar">
-                <div class="floating-bar-count">
-                    Items selected: <span id="floating-total">0</span>
-                </div>
-                <button type="submit" class="btn btn-small">
-                    Send to kitchen
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
+              <div class="card">
+                  <div class="card-header">
+                      <span>Menu</span>
+                      <span class="pill">Tap “Add” to add items, “Remove” to undo</span>
+                  </div>
 
-<script>
+                  <div class="category-grid">
+                      {% for category in categories %}
+                        <div class="category-card">
+                            <div class="category-title">{{ category.name }}</div>
+                            <div>
+                                {# IMPORTANT: use ["items"] not .items #}
+                                {% for item in category["items"] %}
+                                  <div class="menu-item-row">
+                                      <span class="menu-item-name">{{ item.name }}</span>
+                                      <div class="menu-item-actions">
+                                          <!-- hidden input for quantity -->
+                                          <input type="hidden"
+                                                 name="qty_{{ item.id }}"
+                                                 id="qty_{{ item.id }}"
+                                                 value="0">
+
+                                          <span class="badge-count" id="display_qty_{{ item.id }}">0</span>
+
+                                          <button type="button"
+                                                  class="btn btn-secondary btn-small add-btn"
+                                                  data-target="{{ item.id }}">
+                                              + Add
+                                          </button>
+
+                                          <button type="button"
+                                                  class="btn btn-secondary btn-small remove-btn"
+                                                  id="remove_{{ item.id }}"
+                                                  data-target="{{ item.id }}"
+                                                  style="display: none;">
+                                              − Remove
+                                          </button>
+                                      </div>
+                                  </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                      {% endfor %}
+                  </div>
+
+                  <div style="margin-top: 18px; text-align: right;">
+                      <button type="submit" class="btn btn-primary">
+                          Submit Order
+                      </button>
+                  </div>
+              </div>
+          </form>
+      </div>
+  </div>
+
+  <script>
+    // Add / Remove quantity logic
     document.addEventListener("DOMContentLoaded", function () {
         const addButtons = document.querySelectorAll(".add-btn");
         const removeButtons = document.querySelectorAll(".remove-btn");
-        const floatingBar = document.getElementById("floating-bar");
-        const floatingTotal = document.getElementById("floating-total");
-
-        function recalcTotal() {
-            let total = 0;
-            const qtyInputs = document.querySelectorAll("input[id^='qty_']");
-            qtyInputs.forEach(inp => {
-                const val = parseInt(inp.value || "0", 10);
-                if (!isNaN(val)) {
-                    total += val;
-                }
-            });
-
-            floatingTotal.textContent = total.toString();
-
-            if (total > 0) {
-                floatingBar.style.display = "flex";
-            } else {
-                floatingBar.style.display = "none";
-            }
-        }
 
         addButtons.forEach(btn => {
             btn.addEventListener("click", () => {
@@ -207,7 +159,6 @@
                 if (removeBtn) {
                     removeBtn.style.display = "inline-flex";
                 }
-                recalcTotal();
             });
         });
 
@@ -228,13 +179,8 @@
                 if (current <= 0 && removeBtn) {
                     removeBtn.style.display = "none";
                 }
-                recalcTotal();
             });
         });
-
-        // in case of pre-filled values in future
-        recalcTotal();
     });
-</script>
-
+  </script>
 {% endblock %}
