@@ -303,7 +303,7 @@ def submit_order():
         session.commit()
 
         created_local = to_toronto_time(order_db.created_at)
-        created_str = created_local.strftime("%H:%M:%S") if created_local else ""
+        created_str = created_local.strftime("%Y-%m-%d %H:%M:%S")if created_local else ""
 
         success_order = {
             "id": order_db.id,
@@ -343,7 +343,7 @@ def api_orders():
         result = []
         for o in orders_db:
             created_local = to_toronto_time(o.created_at)
-            created_str = created_local.strftime("%H:%M:%S") if created_local else ""
+            created_str = created_local.strftime("%Y-%m-%d %H:%M:%S") if created_local else ""
             result.append({
                 "id": o.id,
                 "customer_name": o.customer_name,
