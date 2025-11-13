@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block head_extra %}
+<script>
+    async function fetchOrders() {
+        const resp = await fetch("/api/orders");
+        const data = await resp.json();
+        renderOrders(data);
+    }
+
+    async function markDone(orderId) {
+        await fetch(`/api/orders/${orderId}/done`, {method: "POST"});
+        fetchOrders();
+    }
+
+    function renderOrders(orders) {
+        const container = document.getElementById("orders");
+        container.innerHTML = "";
+
+        if (!orders.length) {
+            container.innerHTML = "<p>No pending orders.</p>";
+            return;
+        }
+
+        orders.forEach(order => {
+            const div = document.createElement("div");
+            div.className = "card";
+            div.style.marginBottom = "1rem";
+
+            let html = `
+                <h3>Order #${order.id}</h3>
+                <p><strong>${order.customer_name}</strong> — ${order.table || "No table"}<br>
+                Placed at ${order.created_at}</p>
+                <ul>
+            `;
+
+            order.items.forEach(it => {
+                html += `<li>${it.category_name} — ${it.qty} × ${it.name}</li>`;
+            });
+
+            html += `</ul>
+                <button onclick="markDone(${order.id})"
+                        style="padding:8px 16px; background:#444; color:white; border:none; border-radius:6px;">
+                    Mark Done
+                </button>
+            `;
+
+            div.innerHTML = html;
+            container.appendChild(div);
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        fetchOrders();
+        setInterval(fetchOrders, 3000);
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+<h2>Kitchen Dashboard</h2>
+<div id="orders"></div>
+{% endblock %}
