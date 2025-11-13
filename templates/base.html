@@ -2,285 +2,232 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Maharani Dhaba</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <!-- Simple Google Font -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --primary: #d84315;        /* deep orange */
-            --primary-dark: #bf360c;
-            --accent: #ffca28;         /* warm yellow */
-            --accent-soft: #fff3c0;
-            --bg: #fff8e1;             /* light cream */
+            --primary: #b4220a;
+            --primary-dark: #8f1a07;
+            --accent: #dc4b21;
+            --accent-dark: #b83c18;
+            --bg: #f4f4f4;
             --card-bg: #ffffff;
-            --text-main: #2c2c2c;
-            --muted: #757575;
-            --success: #2e7d32;
+            --text-dark: #222;
+            --text-light: #555;
         }
 
         * {
             box-sizing: border-box;
         }
 
-        html, body {
+        body {
             margin: 0;
             padding: 0;
-            height: 100%;
-            font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            color: var(--text-main);
-            background: radial-gradient(circle at top left, #ffe0b2, #fff8e1 50%, #ffe082);
+            font-family: 'Poppins', sans-serif;
+            color: var(--text-dark);
+
+            /* subtle pattern background */
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(circle at 0 0, rgba(0,0,0,0.05) 0, transparent 55%),
+                radial-gradient(circle at 100% 100%, rgba(0,0,0,0.05) 0, transparent 55%);
+            background-attachment: fixed;
         }
 
-        body {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .navbar {
+        /* NAVBAR */
+        nav {
+            width: 100%;
             background: linear-gradient(90deg, var(--primary-dark), var(--primary));
             color: #fff;
-            padding: 10px 24px;
+            padding: 12px 24px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.35);
             position: sticky;
             top: 0;
             z-index: 100;
         }
 
-        .navbar-brand {
+        .nav-left {
             display: flex;
             align-items: center;
-            gap: 12px;
-            font-weight: 700;
-            font-size: 20px;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
+            gap: 10px;
         }
 
-        .navbar-brand span.logo-pill {
-            background: rgba(255, 255, 255, 0.18);
-            border-radius: 999px;
-            padding: 2px 10px;
-            font-size: 10px;
-            text-transform: uppercase;
+        .nav-logo {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #fff;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.6);
         }
 
-        .navbar-links {
+        .nav-title-text {
             display: flex;
-            gap: 12px;
-            font-size: 14px;
+            flex-direction: column;
+            gap: 2px;
         }
 
-        .navbar-links a {
-            color: #ffe0b2;
-            text-decoration: none;
-            padding: 6px 12px;
+        .nav-brand {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-tagline {
+            background: var(--accent);
+            padding: 2px 10px;
             border-radius: 999px;
-            transition: background 0.2s, color 0.2s, transform 0.1s;
-        }
-
-        .navbar-links a:hover {
-            background: rgba(255,255,255,0.16);
-            color: #ffffff;
-            transform: translateY(-1px);
-        }
-
-        .navbar-links a.active {
-            background: #ffe082;
-            color: #4e342e;
-            font-weight: 600;
-        }
-
-        .content-wrapper {
-            flex: 1;
-            padding: 24px;
-            max-width: 1100px;
-            margin: 0 auto 32px auto;
-        }
-
-        .page-title {
-            font-size: 26px;
+            font-size: 11px;
             font-weight: 700;
-            margin-bottom: 4px;
+            display: inline-block;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 14px;
+        }
+
+        .nav-links a {
+            color: #ffeede;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 15px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            transition: 0.15s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255,255,255,0.18);
+            color: #fff;
+        }
+
+        .nav-links a.active {
+            background: #ffe082;
+            color: #4e2e1f;
+        }
+
+        /* PAGE WRAPPER */
+        .content {
+            padding: 26px;
+            max-width: 1120px;
+            margin: 0 auto 40px auto;
+        }
+
+        /* HEADINGS */
+        h1 {
+            font-size: 32px;
+            font-weight: 800;
+            margin: 0 0 6px 0;
+            color: var(--primary);
+        }
+
+        h2 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 0;
         }
 
         .page-subtitle {
-            font-size: 14px;
-            color: var(--muted);
+            font-size: 15px;
+            color: var(--text-light);
             margin-bottom: 20px;
         }
 
+        /* CARD */
         .card {
             background: var(--card-bg);
             border-radius: 16px;
-            padding: 18px 20px;
-            box-shadow: 0 8px 18px rgba(0,0,0,0.08);
-            margin-bottom: 20px;
+            padding: 20px 22px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.14);
+            margin-bottom: 22px;
         }
 
         .card-header {
-            font-weight: 600;
-            margin-bottom: 8px;
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--primary-dark);
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
-        .pill {
-            display: inline-block;
-            padding: 2px 10px;
-            border-radius: 999px;
-            font-size: 11px;
-            background: var(--accent-soft);
-            color: #795548;
-        }
-
-        .form-row {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 8px;
-        }
-
-        .form-field {
-            flex: 1;
-            min-width: 160px;
-        }
-
-        .form-field label {
-            display: block;
-            font-size: 13px;
-            margin-bottom: 4px;
-        }
-
-        .form-field input,
-        .form-field select,
-        .form-field textarea {
-            width: 100%;
-            padding: 8px 10px;
-            border-radius: 12px;
-            border: 1px solid #d7ccc8;
-            outline: none;
-            font-size: 13px;
-            font-family: inherit;
-        }
-
-        .form-field input:focus,
-        .form-field select:focus,
-        .form-field textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 2px rgba(216, 67, 21, 0.15);
-        }
-
+        /* BUTTONS */
         .btn {
-            border: none;
-            border-radius: 999px;
-            padding: 8px 16px;
-            font-size: 13px;
-            cursor: pointer;
-            font-weight: 500;
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            transition: background 0.15s, transform 0.1s, box-shadow 0.15s;
-        }
-
-        .btn-primary {
-            background: var(--primary);
+            justify-content: center;
+            background: var(--accent);
             color: #fff;
-            box-shadow: 0 4px 10px rgba(191, 54, 12, 0.35);
+            padding: 8px 14px;
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 999px;
+            border: none;
+            cursor: pointer;
+            transition: 0.15s;
         }
 
-        .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 14px rgba(191, 54, 12, 0.45);
+        .btn:hover {
+            background: var(--accent-dark);
+        }
+
+        .btn-small {
+            padding: 6px 10px;
+            font-size: 12px;
         }
 
         .btn-secondary {
-            background: #fbe9e7;
-            color: var(--primary-dark);
+            background: #333;
         }
 
         .btn-secondary:hover {
-            background: #ffccbc;
-            transform: translateY(-1px);
+            background: #000;
         }
 
         .btn-success {
-            background: var(--success);
-            color: #fff;
+            background: #2e7d32;
         }
 
         .btn-success:hover {
             background: #1b5e20;
         }
 
-        .btn-small {
-            padding: 4px 10px;
-            font-size: 12px;
-        }
-
-        .badge-count {
-            background: var(--accent);
-            color: #4e342e;
-            border-radius: 999px;
-            padding: 2px 8px;
-            font-size: 11px;
-            min-width: 20px;
-            text-align: center;
-            margin-left: 6px;
-        }
-
-        .success-banner {
-            background: #e8f5e9;
-            border-radius: 12px;
-            border-left: 4px solid var(--success);
-            padding: 10px 12px;
-            font-size: 13px;
-            margin-bottom: 14px;
-        }
-
-        .success-banner strong {
-            color: var(--success);
-        }
-
+        /* GRIDS / MENU */
         .category-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
             gap: 16px;
         }
 
         .category-card {
+            background: var(--card-bg);
             border-radius: 14px;
-            padding: 12px 12px 8px 12px;
-            background: linear-gradient(145deg, #ffffff, #fff3e0);
-            box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+            padding: 14px 12px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
         }
 
         .category-title {
-            font-weight: 600;
-            font-size: 15px;
+            font-weight: 700;
             margin-bottom: 8px;
-            color: #4e342e;
+            font-size: 16px;
+            color: var(--primary);
         }
 
         .menu-item-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 13px;
-            padding: 3px 0;
-            border-bottom: 1px dashed #ffe0b2;
-        }
-
-        .menu-item-row:last-child {
-            border-bottom: none;
+            padding: 4px 0;
+            font-size: 14px;
         }
 
         .menu-item-name {
@@ -293,58 +240,138 @@
             gap: 6px;
         }
 
+        .badge-count {
+            background: var(--primary);
+            padding: 3px 9px;
+            color: #fff;
+            border-radius: 999px;
+            font-size: 12px;
+            min-width: 22px;
+            text-align: center;
+        }
+
+        /* FORMS */
+        .form-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+        }
+
+        .form-field {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .form-field label {
+            display: block;
+            font-size: 13px;
+            margin-bottom: 3px;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 9px 11px;
+            border: 1px solid #b0b0b0;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 70px;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(180,34,10,0.25);
+        }
+
+        .pill {
+            background: #eee;
+            padding: 3px 9px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .success-banner {
+            padding: 12px 14px;
+            background: #d7ffe0;
+            border-left: 4px solid #29a746;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
         .order-card {
-            margin-bottom: 16px;
+            margin-bottom: 14px;
         }
 
         .order-title {
-            font-weight: 600;
-            margin-bottom: 4px;
+            font-weight: 700;
         }
 
         .order-meta {
             font-size: 12px;
-            color: var(--muted);
+            color: var(--text-light);
         }
 
         .empty-state {
             text-align: center;
-            padding: 40px 10px;
-            color: var(--muted);
+            color: var(--text-light);
             font-size: 14px;
+            padding: 30px 10px;
         }
 
         @media (max-width: 640px) {
-            .content-wrapper {
-                padding: 16px;
-            }
-            .navbar {
+            nav {
                 flex-direction: column;
                 align-items: flex-start;
                 gap: 6px;
             }
-            .navbar-links {
+            .nav-links {
                 width: 100%;
                 justify-content: flex-start;
+            }
+            .content {
+                padding: 18px;
             }
         }
     </style>
 </head>
 <body>
-    <header class="navbar">
-        <div class="navbar-brand">
-            <span>🍛 Maharani Dhaba</span>
-            <span class="logo-pill">Best dhaba in town</span>
+    <nav>
+        <div class="nav-left">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="Maharani Dhaba logo" class="nav-logo">
+            <div class="nav-title-text">
+                <div class="nav-brand">Maharani Dhaba</div>
+                <div class="nav-tagline">Best dhaba in town</div>
+            </div>
         </div>
-        <nav class="navbar-links">
-            <a href="{{ url_for('order_page') }}" class="{% if request.path.startswith('/order') or request.path == '/' %}active{% endif %}">Order</a>
-            <a href="{{ url_for('kitchen_page') }}" class="{% if request.path.startswith('/kitchen') %}active{% endif %}">Kitchen</a>
-            <a href="{{ url_for('reviews_page') }}" class="{% if request.path.startswith('/reviews') %}active{% endif %}">Reviews</a>
-        </nav>
-    </header>
 
-    <main class="content-wrapper">
+        <div class="nav-links">
+            <a href="{{ url_for('order_page') }}"
+               class="{% if request.path.startswith('/order') or request.path == '/' %}active{% endif %}">
+                Order
+            </a>
+            <a href="{{ url_for('kitchen_page') }}"
+               class="{% if request.path.startswith('/kitchen') %}active{% endif %}">
+                Kitchen
+            </a>
+            <a href="{{ url_for('reviews_page') }}"
+               class="{% if request.path.startswith('/reviews') %}active{% endif %}">
+                Reviews
+            </a>
+        </div>
+    </nav>
+
+    <div class="content">
         {% block content %}{% endblock %}
-    </main>
+    </div>
 </body>
 </html>
