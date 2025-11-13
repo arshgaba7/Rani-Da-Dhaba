@@ -1,63 +1,100 @@
 {% extends "base.html" %}
 
-{% block head_extra %}
-<script>
-    async function fetchOrders() {
-        const resp = await fetch("/api/orders");
-        const data = await resp.json();
-        renderOrders(data);
-    }
+{% block content %}
+  <h1 class="page-title">Kitchen Dashboard</h1>
+  <p class="page-subtitle">
+      This screen refreshes automatically. New orders appear at the top. Click <strong>Mark Done</strong> when finished.
+  </p>
 
-    async function markDone(orderId) {
-        await fetch(`/api/orders/${orderId}/done`, {method: "POST"});
-        fetchOrders();
+  <div id="orders-container"></div>
+
+  <div id="empty-state" class="empty-state" style="display: none;">
+      No pending orders right now. Time for chai ☕
+  </div>
+
+  <script>
+    async function loadOrders() {
+        try {
+            const res = await fetch("{{ url_for('api_orders') }}", { cache: "no-store" });
+            if (!res.ok) {
+                console.error("Failed to load orders");
+                return;
+            }
+            const data = await res.json();
+            renderOrders(data);
+        } catch (err) {
+            console.error("Error fetching orders:", err);
+        }
     }
 
     function renderOrders(orders) {
-        const container = document.getElementById("orders");
+        const container = document.getElementById("orders-container");
+        const emptyState = document.getElementById("empty-state");
+
         container.innerHTML = "";
 
-        if (!orders.length) {
-            container.innerHTML = "<p>No pending orders.</p>";
+        if (!orders || orders.length === 0) {
+            emptyState.style.display = "block";
             return;
+        } else {
+            emptyState.style.display = "none";
         }
 
         orders.forEach(order => {
-            const div = document.createElement("div");
-            div.className = "card";
-            div.style.marginBottom = "1rem";
+            const card = document.createElement("div");
+            card.className = "card order-card";
 
-            let html = `
-                <h3>Order #${order.id}</h3>
-                <p><strong>${order.customer_name}</strong> — ${order.table || "No table"}<br>
-                Placed at ${order.created_at}</p>
-                <ul>
-            `;
+            const title = document.createElement("div");
+            title.className = "order-title";
+            title.textContent = "Order #" + order.id;
+
+            const meta = document.createElement("div");
+            meta.className = "order-meta";
+            const name = order.customer_name || "Guest";
+            const table = order.table || "No table";
+            const placedAt = order.created_at || "";
+            meta.textContent = name + " — " + table + " • Placed at " + placedAt;
+
+            const list = document.createElement("ul");
+            list.style.marginTop = "10px";
 
             order.items.forEach(it => {
-                html += `<li>${it.category_name} — ${it.qty} × ${it.name}</li>`;
+                const li = document.createElement("li");
+                li.style.marginBottom = "2px";
+                li.textContent = it.category_name + " — " + it.qty + " × " + it.name;
+                list.appendChild(li);
             });
 
-            html += `</ul>
-                <button onclick="markDone(${order.id})"
-                        style="padding:8px 16px; background:#444; color:white; border:none; border-radius:6px;">
-                    Mark Done
-                </button>
-            `;
+            const btnWrapper = document.createElement("div");
+            btnWrapper.style.marginTop = "12px";
 
-            div.innerHTML = html;
-            container.appendChild(div);
+            const doneBtn = document.createElement("button");
+            doneBtn.className = "btn btn-success btn-small";
+            doneBtn.textContent = "Mark Done";
+            doneBtn.addEventListener("click", () => markDone(order.id));
+
+            btnWrapper.appendChild(doneBtn);
+
+            card.appendChild(title);
+            card.appendChild(meta);
+            card.appendChild(list);
+            card.appendChild(btnWrapper);
+
+            container.appendChild(card);
         });
     }
 
-    document.addEventListener("DOMContentLoaded", () => {
-        fetchOrders();
-        setInterval(fetchOrders, 3000);
-    });
-</script>
-{% endblock %}
+    async function markDone(orderId) {
+        try {
+            await fetch(`/api/orders/${orderId}/done`, { method: "POST" });
+            loadOrders();
+        } catch (err) {
+            console.error("Failed to mark done:", err);
+        }
+    }
 
-{% block content %}
-<h2>Kitchen Dashboard</h2>
-<div id="orders"></div>
+    // initial load + polling
+    loadOrders();
+    setInterval(loadOrders, 5000);
+  </script>
 {% endblock %}
