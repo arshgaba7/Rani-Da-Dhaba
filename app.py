@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo  # <-- NEW: timezone support
 
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 
@@ -14,6 +15,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 app = Flask(__name__)
+
+# ---------- TIMEZONE ----------
+TORONTO_TZ = ZoneInfo("America/Toronto")
 
 # ---------- DATABASE SETUP ----------
 
@@ -45,7 +49,11 @@ class Order(Base):
     customer_name = Column(String(100))
     table = Column(String(50))
     status = Column(String(20), default="new")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    # store with timezone info; default is current Toronto time
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(TORONTO_TZ),
+    )
 
     items = relationship(
         "OrderItem",
@@ -221,6 +229,18 @@ def all_menu_items_with_category():
     return items
 
 
+# ---------- HELPER FOR TIME DISPLAY ----------
+
+def to_toronto_time(dt_obj: datetime) -> datetime:
+    """Convert any stored datetime to Toronto local time for display."""
+    if dt_obj is None:
+        return None
+    if dt_obj.tzinfo is None:
+        # assume it's already Toronto time if naive (older rows)
+        return dt_obj.replace(tzinfo=TORONTO_TZ)
+    return dt_obj.astimezone(TORONTO_TZ)
+
+
 # ---------- ROUTES ----------
 
 @app.route("/")
@@ -263,17 +283,15 @@ def submit_order():
 
     session = SessionLocal()
     try:
-        # create order
+        # created_at will default to current Toronto time
         order_db = Order(
             customer_name=customer_name,
             table=table,
             status="new",
-            created_at=datetime.utcnow(),
         )
         session.add(order_db)
         session.flush()  # assigns order_db.id
 
-        # create items
         for it in ordered_items:
             oi = OrderItem(
                 order_id=order_db.id,
@@ -287,13 +305,15 @@ def submit_order():
 
         session.commit()
 
-        # Build success_order dict for template
+        created_local = to_toronto_time(order_db.created_at)
+        created_str = created_local.strftime("%H:%M:%S") if created_local else ""
+
         success_order = {
             "id": order_db.id,
             "customer_name": order_db.customer_name,
             "table": order_db.table,
             "status": order_db.status,
-            "created_at": order_db.created_at.strftime("%H:%M:%S"),
+            "created_at": created_str,
             "items": ordered_items,
         }
 
@@ -325,12 +345,14 @@ def api_orders():
 
         result = []
         for o in orders_db:
+            created_local = to_toronto_time(o.created_at)
+            created_str = created_local.strftime("%H:%M:%S") if created_local else ""
             result.append({
                 "id": o.id,
                 "customer_name": o.customer_name,
                 "table": o.table,
                 "status": o.status,
-                "created_at": o.created_at.strftime("%H:%M:%S"),
+                "created_at": created_str,
                 "items": [
                     {
                         "id": it.item_id,
@@ -363,5 +385,4 @@ def mark_order_done(order_id):
 
 
 if __name__ == "__main__":
-    # local dev
     app.run(host="0.0.0.0", port=5001, debug=True)
