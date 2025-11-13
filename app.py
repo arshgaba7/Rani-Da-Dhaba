@@ -161,7 +161,7 @@ MENU_CATEGORIES = [
 
     {
         "id": "roti",
-        "name": "Roti & Paratha",
+        "name": "Rotiyaan",
         "items": [
             {"id": 401, "name": "Roti"},
             {"id": 402, "name": "Butter Roti"},
