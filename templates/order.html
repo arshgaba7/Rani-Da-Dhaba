@@ -43,7 +43,8 @@
                 <div class="category-card">
                     <div class="category-title">{{ category.name }}</div>
                     <div>
-                        {% for item in category.items %}
+                        {# NOTE: use ["items"] instead of .items to avoid conflict with dict.items() #}
+                        {% for item in category["items"] %}
                           <div class="menu-item-row">
                               <span class="menu-item-name">{{ item.name }}</span>
                               <div class="menu-item-actions">
