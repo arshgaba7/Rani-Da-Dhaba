@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from zoneinfo import ZoneInfo  # <-- NEW: timezone support
+from zoneinfo import ZoneInfo  # Python 3.9+ timezone support
 
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 
@@ -49,11 +49,8 @@ class Order(Base):
     customer_name = Column(String(100))
     table = Column(String(50))
     status = Column(String(20), default="new")
-    # store with timezone info; default is current Toronto time
-    created_at = Column(
-        DateTime(timezone=True),
-        default=lambda: datetime.now(TORONTO_TZ),
-    )
+    # We'll set this explicitly in Python code using Toronto time
+    created_at = Column(DateTime(timezone=True))
 
     items = relationship(
         "OrderItem",
@@ -229,15 +226,13 @@ def all_menu_items_with_category():
     return items
 
 
-# ---------- HELPER FOR TIME DISPLAY ----------
-
 def to_toronto_time(dt_obj: datetime) -> datetime:
-    """Convert any stored datetime to Toronto local time for display."""
+    """Convert any datetime to Toronto local time for display."""
     if dt_obj is None:
         return None
     if dt_obj.tzinfo is None:
-        # assume it's already Toronto time if naive (older rows)
-        return dt_obj.replace(tzinfo=TORONTO_TZ)
+        # treat naive as UTC and convert to Toronto
+        dt_obj = dt_obj.replace(tzinfo=ZoneInfo("UTC"))
     return dt_obj.astimezone(TORONTO_TZ)
 
 
@@ -283,11 +278,13 @@ def submit_order():
 
     session = SessionLocal()
     try:
-        # created_at will default to current Toronto time
+        created_at = datetime.now(TORONTO_TZ)  # <-- Toronto time here
+
         order_db = Order(
             customer_name=customer_name,
             table=table,
             status="new",
+            created_at=created_at,
         )
         session.add(order_db)
         session.flush()  # assigns order_db.id
