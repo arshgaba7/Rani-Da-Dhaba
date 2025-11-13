@@ -37,6 +37,7 @@ MENU_CATEGORIES = [
             {"id": 22, "name": "Keema Chaap"},
         ],
     },
+
     {
         "id": "paneer_special",
         "name": "Paneer Special",
@@ -57,6 +58,7 @@ MENU_CATEGORIES = [
             {"id": 114, "name": "Stuff Tomato"},
         ],
     },
+
     {
         "id": "raita_salad",
         "name": "Raita & Salad",
@@ -71,6 +73,7 @@ MENU_CATEGORIES = [
             {"id": 208, "name": "Masala Papad"},
         ],
     },
+
     {
         "id": "basmati_ka_khajana",
         "name": "Basmati Ka Khajana",
@@ -84,6 +87,7 @@ MENU_CATEGORIES = [
             {"id": 307, "name": "Veg. Biryani"},
         ],
     },
+
     {
         "id": "roti",
         "name": "Roti & Paratha",
@@ -109,6 +113,33 @@ MENU_CATEGORIES = [
             {"id": 419, "name": "Mix Naan"},
         ],
     },
+
+    # -------- NEW CATEGORY: SNACKS --------
+    {
+        "id": "snacks",
+        "name": "Snacks",
+        "items": [
+            {"id": 501, "name": "Cheese Chilly"},
+            {"id": 502, "name": "Munchurian"},
+            {"id": 503, "name": "Honey Chilli Potato"},
+            {"id": 504, "name": "Paneer Pakora"},
+            {"id": 505, "name": "Vegetable Pakora"},
+            {"id": 506, "name": "Szechwan Chilli Potato"},
+            {"id": 507, "name": "Chicken Pakora"},
+            {"id": 508, "name": "Chicken Chilli"},
+            {"id": 509, "name": "Burger"},
+            {"id": 510, "name": "Noodles"},
+            {"id": 511, "name": "Pao Bhaji"},
+            {"id": 512, "name": "Idli Sambhar"},
+            {"id": 513, "name": "Momos"},
+            {"id": 514, "name": "Sandwich"},
+            {"id": 515, "name": "Aalo Tikki"},
+            {"id": 516, "name": "Chaat Papdi"},
+            {"id": 517, "name": "Samosa"},
+            {"id": 518, "name": "Kebab"},
+            {"id": 519, "name": "Bhel Puri"},
+        ],
+    },
 ]
 
 # -------- PERSISTENCE HELPERS --------
@@ -130,11 +161,12 @@ def load_state():
         orders = data.get("orders", [])
         next_order_id = data.get("next_order_id", 1)
 
-        # Safety: ensure next_order_id is above max existing id
+        # Ensure next_order_id is correct
         if orders:
             max_id = max(o.get("id", 0) for o in orders)
             if next_order_id <= max_id:
                 next_order_id = max_id + 1
+
     except Exception as e:
         print("Failed to load state:", e)
         orders = []
@@ -167,6 +199,8 @@ def all_menu_items_with_category():
     return items
 
 
+# -------- ROUTES --------
+
 @app.route("/")
 def index():
     return redirect(url_for("order_page"))
@@ -190,6 +224,7 @@ def submit_order():
         qty_str = request.form.get(f"qty_{item['id']}")
         if not qty_str:
             continue
+
         try:
             qty = int(qty_str)
         except ValueError:
@@ -215,9 +250,9 @@ def submit_order():
         "status": "new",
         "created_at": datetime.now().strftime("%H:%M:%S"),
     }
+
     orders.append(order)
     next_order_id += 1
-
     save_state()
 
     return render_template("order.html", categories=MENU_CATEGORIES, success_order=order)
@@ -230,7 +265,6 @@ def kitchen_page():
 
 @app.route("/api/orders")
 def api_orders():
-    # Return all orders that are not done
     pending = [o for o in orders if o.get("status") != "done"]
     return jsonify(pending)
 
@@ -241,6 +275,7 @@ def mark_order_done(order_id):
         if o.get("id") == order_id:
             o["status"] = "done"
             break
+
     save_state()
     return jsonify({"success": True})
 
