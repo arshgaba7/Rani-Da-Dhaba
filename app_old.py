@@ -1,79 +1,13 @@
 import os
+import json
 from datetime import datetime
-
 from flask import Flask, render_template, request, redirect, url_for, jsonify
-
-from sqlalchemy import (
-    create_engine,
-    Column,
-    Integer,
-    String,
-    DateTime,
-    ForeignKey,
-)
-from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 app = Flask(__name__)
 
-# ---------- DATABASE SETUP ----------
+DATA_FILE = "orders.json"
 
-def get_database_url():
-    """
-    Use DATABASE_URL if provided (Render Postgres).
-    Fallback to local SQLite for development.
-    Also fix 'postgres://' -> 'postgresql://' for SQLAlchemy.
-    """
-    url = os.environ.get("DATABASE_URL")
-    if url:
-        if url.startswith("postgres://"):
-            url = url.replace("postgres://", "postgresql://", 1)
-        return url
-    # Local dev fallback
-    return "sqlite:///orders.db"
-
-
-DATABASE_URL = get_database_url()
-engine = create_engine(DATABASE_URL, echo=False, future=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-Base = declarative_base()
-
-
-class Order(Base):
-    __tablename__ = "orders"
-
-    id = Column(Integer, primary_key=True, index=True)
-    customer_name = Column(String(100))
-    table = Column(String(50))
-    status = Column(String(20), default="new")
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    items = relationship(
-        "OrderItem",
-        back_populates="order",
-        cascade="all, delete-orphan",
-        order_by="OrderItem.id",
-    )
-
-
-class OrderItem(Base):
-    __tablename__ = "order_items"
-
-    id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey("orders.id"))
-    item_id = Column(Integer)
-    name = Column(String(100))
-    category_id = Column(String(50))
-    category_name = Column(String(100))
-    qty = Column(Integer)
-
-    order = relationship("Order", back_populates="items")
-
-
-# Create tables if they don't exist
-Base.metadata.create_all(bind=engine)
-
-# ---------- MENU DEFINITION WITH CATEGORIES ----------
-
+# -------- MENU DEFINITION WITH CATEGORIES --------
 MENU_CATEGORIES = [
     {
         "id": "sabzi",
@@ -180,6 +114,7 @@ MENU_CATEGORIES = [
         ],
     },
 
+    # -------- NEW CATEGORY: SNACKS --------
     {
         "id": "snacks",
         "name": "Snacks",
@@ -207,6 +142,49 @@ MENU_CATEGORIES = [
     },
 ]
 
+# -------- PERSISTENCE HELPERS --------
+orders = []
+next_order_id = 1
+
+
+def load_state():
+    """Load orders and next_order_id from DATA_FILE if it exists."""
+    global orders, next_order_id
+    if not os.path.exists(DATA_FILE):
+        orders = []
+        next_order_id = 1
+        return
+
+    try:
+        with open(DATA_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        orders = data.get("orders", [])
+        next_order_id = data.get("next_order_id", 1)
+
+        # Ensure next_order_id is correct
+        if orders:
+            max_id = max(o.get("id", 0) for o in orders)
+            if next_order_id <= max_id:
+                next_order_id = max_id + 1
+
+    except Exception as e:
+        print("Failed to load state:", e)
+        orders = []
+        next_order_id = 1
+
+
+def save_state():
+    """Save orders and next_order_id to DATA_FILE."""
+    data = {
+        "orders": orders,
+        "next_order_id": next_order_id,
+    }
+    try:
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print("Failed to save state:", e)
+
 
 def all_menu_items_with_category():
     items = []
@@ -221,7 +199,7 @@ def all_menu_items_with_category():
     return items
 
 
-# ---------- ROUTES ----------
+# -------- ROUTES --------
 
 @app.route("/")
 def index():
@@ -235,6 +213,8 @@ def order_page():
 
 @app.route("/order", methods=["POST"])
 def submit_order():
+    global next_order_id, orders
+
     customer_name = request.form.get("customer_name", "").strip() or "Guest"
     table = request.form.get("table", "").strip()
 
@@ -244,6 +224,7 @@ def submit_order():
         qty_str = request.form.get(f"qty_{item['id']}")
         if not qty_str:
             continue
+
         try:
             qty = int(qty_str)
         except ValueError:
@@ -251,7 +232,7 @@ def submit_order():
 
         if qty > 0:
             ordered_items.append({
-                "item_id": item["id"],
+                "id": item["id"],
                 "name": item["name"],
                 "qty": qty,
                 "category_id": item["category_id"],
@@ -261,50 +242,20 @@ def submit_order():
     if not ordered_items:
         return redirect(url_for("order_page"))
 
-    session = SessionLocal()
-    try:
-        # create order
-        order_db = Order(
-            customer_name=customer_name,
-            table=table,
-            status="new",
-            created_at=datetime.utcnow(),
-        )
-        session.add(order_db)
-        session.flush()  # assigns order_db.id
+    order = {
+        "id": next_order_id,
+        "customer_name": customer_name,
+        "table": table,
+        "items": ordered_items,
+        "status": "new",
+        "created_at": datetime.now().strftime("%H:%M:%S"),
+    }
 
-        # create items
-        for it in ordered_items:
-            oi = OrderItem(
-                order_id=order_db.id,
-                item_id=it["item_id"],
-                name=it["name"],
-                qty=it["qty"],
-                category_id=it["category_id"],
-                category_name=it["category_name"],
-            )
-            session.add(oi)
+    orders.append(order)
+    next_order_id += 1
+    save_state()
 
-        session.commit()
-
-        # Build success_order dict for template
-        success_order = {
-            "id": order_db.id,
-            "customer_name": order_db.customer_name,
-            "table": order_db.table,
-            "status": order_db.status,
-            "created_at": order_db.created_at.strftime("%H:%M:%S"),
-            "items": ordered_items,
-        }
-
-    finally:
-        session.close()
-
-    return render_template(
-        "order.html",
-        categories=MENU_CATEGORIES,
-        success_order=success_order,
-    )
+    return render_template("order.html", categories=MENU_CATEGORIES, success_order=order)
 
 
 @app.route("/kitchen")
@@ -314,54 +265,23 @@ def kitchen_page():
 
 @app.route("/api/orders")
 def api_orders():
-    session = SessionLocal()
-    try:
-        orders_db = (
-            session.query(Order)
-            .filter(Order.status != "done")
-            .order_by(Order.id)
-            .all()
-        )
-
-        result = []
-        for o in orders_db:
-            result.append({
-                "id": o.id,
-                "customer_name": o.customer_name,
-                "table": o.table,
-                "status": o.status,
-                "created_at": o.created_at.strftime("%H:%M:%S"),
-                "items": [
-                    {
-                        "id": it.item_id,
-                        "name": it.name,
-                        "qty": it.qty,
-                        "category_id": it.category_id,
-                        "category_name": it.category_name,
-                    }
-                    for it in o.items
-                ],
-            })
-    finally:
-        session.close()
-
-    return jsonify(result)
+    pending = [o for o in orders if o.get("status") != "done"]
+    return jsonify(pending)
 
 
 @app.route("/api/orders/<int:order_id>/done", methods=["POST"])
 def mark_order_done(order_id):
-    session = SessionLocal()
-    try:
-        order = session.query(Order).filter_by(id=order_id).first()
-        if order:
-            order.status = "done"
-            session.commit()
-    finally:
-        session.close()
+    for o in orders:
+        if o.get("id") == order_id:
+            o["status"] = "done"
+            break
 
+    save_state()
     return jsonify({"success": True})
 
 
+# -------- INITIAL LOAD --------
+load_state()
+
 if __name__ == "__main__":
-    # local dev
     app.run(host="0.0.0.0", port=5001, debug=True)
