@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1 class="page-title">Reviews & Completed Orders</h1>
+  <p class="page-subtitle">
+      Once the kitchen marks an order done, it appears here. Give a rating and share what you thought of the food.
+  </p>
+
+  <!-- Pending reviews -->
+  <div class="card">
+      <div class="card-header">
+          <span>Pending reviews</span>
+          <span class="pill">These orders are done but not reviewed yet</span>
+      </div>
+
+      {% if pending_orders %}
+        {% for order in pending_orders %}
+          <div class="order-card" id="order-{{ order.id }}">
+              <div class="order-title">Order #{{ order.id }}</div>
+              <div class="order-meta">
+                  {{ order.customer_name }} — {{ order.table }} • Completed at {{ order.created_at }}
+              </div>
+
+              <form method="POST" action="{{ url_for('submit_review', order_id=order.id) }}" style="margin-top: 10px;">
+                  <div class="form-row">
+                      <div class="form-field" style="max-width: 180px;">
+                          <label for="rating_{{ order.id }}">Rating</label>
+                          <select id="rating_{{ order.id }}" name="rating" required>
+                              <option value="">Choose…</option>
+                              {% for r in [1,2,3,4,5] %}
+                                <option value="{{ r }}">{{ r }} ★</option>
+                              {% endfor %}
+                          </select>
+                      </div>
+                  </div>
+                  <div class="form-field" style="margin-top: 6px;">
+                      <label for="comment_{{ order.id }}">Comments</label>
+                      <textarea id="comment_{{ order.id }}" name="comment" rows="2" placeholder="How was the food?"></textarea>
+                  </div>
+                  <div style="margin-top: 8px; text-align: right;">
+                      <button type="submit" class="btn btn-primary btn-small">Submit review</button>
+                  </div>
+              </form>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+            No pending reviews right now. Enjoy your meal 😋
+        </div>
+      {% endif %}
+  </div>
+
+  <!-- Completed reviews -->
+  <div class="card">
+      <div class="card-header">
+          <span>Past reviews</span>
+          <span class="pill">What people said about Maharani Dhaba</span>
+      </div>
+
+      {% if reviewed_orders %}
+        {% for order in reviewed_orders %}
+          <div class="order-card">
+              <div class="order-title">
+                  Order #{{ order.id }}
+                  {% if order.rating %}
+                    <span style="margin-left: 8px; color: #ffb300;">
+                        {% for i in range(order.rating) %}★{% endfor %}
+                        {% for i in range(5 - order.rating) %}☆{% endfor %}
+                    </span>
+                  {% endif %}
+              </div>
+              <div class="order-meta">
+                  {{ order.customer_name }} — {{ order.table }} • Completed at {{ order.created_at }}
+              </div>
+              {% if order.comment %}
+                <div style="margin-top: 6px; font-size: 13px;">
+                    “{{ order.comment }}”
+                </div>
+              {% else %}
+                <div style="margin-top: 6px; font-size: 13px; color: var(--muted);">
+                    No comments left.
+                </div>
+              {% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">
+            No reviews yet. Once you start rating, they’ll show up here.
+        </div>
+      {% endif %}
+  </div>
+{% endblock %}

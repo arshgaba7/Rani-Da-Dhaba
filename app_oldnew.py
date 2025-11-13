@@ -49,21 +49,14 @@ class Order(Base):
     customer_name = Column(String(100))
     table = Column(String(50))
     status = Column(String(20), default="new")
-    created_at = Column(DateTime(timezone=True))  # set explicitly in code
+    # We'll set this explicitly in Python code using Toronto time
+    created_at = Column(DateTime(timezone=True))
 
     items = relationship(
         "OrderItem",
         back_populates="order",
         cascade="all, delete-orphan",
         order_by="OrderItem.id",
-    )
-
-    # one-to-one relationship to Review
-    review = relationship(
-        "Review",
-        uselist=False,
-        back_populates="order",
-        cascade="all, delete-orphan",
     )
 
 
@@ -81,19 +74,7 @@ class OrderItem(Base):
     order = relationship("Order", back_populates="items")
 
 
-class Review(Base):
-    __tablename__ = "reviews"
-
-    id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey("orders.id"), unique=True)
-    rating = Column(Integer)  # 1–5
-    comment = Column(String(1000))
-    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(TORONTO_TZ))
-
-    order = relationship("Order", back_populates="review")
-
-
-# Create tables if they don't exist (this will add the `reviews` table)
+# Create tables if they don't exist
 Base.metadata.create_all(bind=engine)
 
 # ---------- MENU DEFINITION WITH CATEGORIES ----------
@@ -180,7 +161,7 @@ MENU_CATEGORIES = [
 
     {
         "id": "roti",
-        "name": "Roti & Paratha",
+        "name": "Rotiyaan",
         "items": [
             {"id": 401, "name": "Roti"},
             {"id": 402, "name": "Butter Roti"},
@@ -297,7 +278,7 @@ def submit_order():
 
     session = SessionLocal()
     try:
-        created_at = datetime.now(TORONTO_TZ)  # Toronto time
+        created_at = datetime.now(TORONTO_TZ)  # <-- Toronto time here
 
         order_db = Order(
             customer_name=customer_name,
@@ -322,7 +303,7 @@ def submit_order():
         session.commit()
 
         created_local = to_toronto_time(order_db.created_at)
-        created_str = created_local.strftime("%Y-%m-%d %H:%M:%S") if created_local else ""
+        created_str = created_local.strftime("%Y-%m-%d %H:%M:%S")if created_local else ""
 
         success_order = {
             "id": order_db.id,
@@ -398,99 +379,6 @@ def mark_order_done(order_id):
         session.close()
 
     return jsonify({"success": True})
-
-
-# ---------- REVIEWS / COMPLETED ORDERS ----------
-
-@app.route("/reviews", methods=["GET"])
-def reviews_page():
-    """Show completed orders and allow rating + comments."""
-    session = SessionLocal()
-    pending = []
-    reviewed = []
-    try:
-        orders_db = (
-            session.query(Order)
-            .filter(Order.status == "done")
-            .order_by(Order.id.desc())
-            .all()
-        )
-
-        for o in orders_db:
-            created_local = to_toronto_time(o.created_at)
-            created_str = created_local.strftime("%Y-%m-%d %H:%M:%S") if created_local else ""
-            base_info = {
-                "id": o.id,
-                "customer_name": o.customer_name or "Guest",
-                "table": o.table or "No table",
-                "created_at": created_str,
-            }
-            if o.review is None:
-                entry = dict(base_info)
-                entry["rating"] = None
-                entry["comment"] = ""
-                pending.append(entry)
-            else:
-                entry = dict(base_info)
-                entry["rating"] = o.review.rating
-                entry["comment"] = o.review.comment or ""
-                reviewed.append(entry)
-    finally:
-        session.close()
-
-    return render_template(
-        "reviews.html",
-        pending_orders=pending,
-        reviewed_orders=reviewed,
-    )
-
-
-@app.route("/reviews/<int:order_id>", methods=["POST"])
-def submit_review(order_id):
-    """Create or update a review for a completed order."""
-    rating_str = request.form.get("rating", "").strip()
-    comment = request.form.get("comment", "").strip()
-
-    try:
-        rating = int(rating_str)
-    except ValueError:
-        rating = None
-
-    if rating is not None:
-        if rating < 1:
-            rating = 1
-        if rating > 5:
-            rating = 5
-
-    session = SessionLocal()
-    try:
-        order = (
-            session.query(Order)
-            .filter(Order.id == order_id, Order.status == "done")
-            .first()
-        )
-        if not order:
-            session.close()
-            return redirect(url_for("reviews_page"))
-
-        if order.review is None:
-            review = Review(
-                order_id=order.id,
-                rating=rating,
-                comment=comment,
-                created_at=datetime.now(TORONTO_TZ),
-            )
-            session.add(review)
-        else:
-            order.review.rating = rating
-            order.review.comment = comment
-            order.review.created_at = datetime.now(TORONTO_TZ)
-
-        session.commit()
-    finally:
-        session.close()
-
-    return redirect(url_for("reviews_page") + f"#order-{order_id}")
 
 
 if __name__ == "__main__":
