@@ -86,7 +86,7 @@ class Review(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     order_id = Column(Integer, ForeignKey("orders.id"), unique=True)
-    rating = Column(Integer)  # 1-5
+    rating = Column(Integer)  # 1–5
     comment = Column(String(1000))
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(TORONTO_TZ))
 
@@ -350,16 +350,11 @@ def kitchen_page():
 
 @app.route("/api/orders")
 def api_orders():
-    """
-    Return only active orders for the kitchen:
-    - 'new' (just placed)
-    - 'confirmed' (kitchen accepted, waiting to be cooked / finished)
-    """
     session = SessionLocal()
     try:
         orders_db = (
             session.query(Order)
-            .filter(Order.status.in_(["new", "confirmed"]))
+            .filter(Order.status != "done")
             .order_by(Order.id)
             .all()
         )
@@ -376,7 +371,7 @@ def api_orders():
                 "created_at": created_str,
                 "items": [
                     {
-                        "id": it.item_id,  # menu item id
+                        "id": it.item_id,
                         "name": it.name,
                         "qty": it.qty,
                         "category_id": it.category_id,
@@ -389,48 +384,6 @@ def api_orders():
         session.close()
 
     return jsonify(result)
-
-
-@app.route("/api/orders/<int:order_id>/confirm", methods=["POST"])
-def confirm_order(order_id):
-    """
-    Kitchen confirms an order.
-    Request JSON: { "rejected_item_ids": [menu_item_id, ...] }
-
-    - Removes rejected items from the order.
-    - If all items are rejected -> status = 'rejected'.
-    - Otherwise -> status = 'confirmed'.
-    """
-    data = request.get_json(force=True) or {}
-    rejected_item_ids = data.get("rejected_item_ids", []) or []
-
-    # cast to int to be safe
-    rejected_item_ids = [int(x) for x in rejected_item_ids]
-
-    session = SessionLocal()
-    try:
-        order = session.query(Order).filter_by(id=order_id).first()
-        if not order:
-            session.close()
-            return jsonify({"success": False, "error": "Order not found"}), 404
-
-        # remove rejected items
-        for oi in list(order.items):
-            if oi.item_id in rejected_item_ids:
-                session.delete(oi)
-
-        session.flush()
-
-        if not order.items:
-            order.status = "rejected"
-        else:
-            order.status = "confirmed"
-
-        session.commit()
-
-        return jsonify({"success": True, "status": order.status})
-    finally:
-        session.close()
 
 
 @app.route("/api/orders/<int:order_id>/done", methods=["POST"])
@@ -466,30 +419,22 @@ def reviews_page():
         for o in orders_db:
             created_local = to_toronto_time(o.created_at)
             created_str = created_local.strftime("%Y-%m-%d %H:%M:%S") if created_local else ""
-
-            items = [
-                {
-                    "name": it.name,
-                    "qty": it.qty,
-                    "category_name": it.category_name,
-                }
-                for it in o.items
-            ]
-
-            base = {
+            base_info = {
                 "id": o.id,
                 "customer_name": o.customer_name or "Guest",
                 "table": o.table or "No table",
                 "created_at": created_str,
-                "items": items,
             }
-
             if o.review is None:
-                pending.append(base)
+                entry = dict(base_info)
+                entry["rating"] = None
+                entry["comment"] = ""
+                pending.append(entry)
             else:
-                base["rating"] = o.review.rating
-                base["comment"] = o.review.comment or ""
-                reviewed.append(base)
+                entry = dict(base_info)
+                entry["rating"] = o.review.rating
+                entry["comment"] = o.review.comment or ""
+                reviewed.append(entry)
     finally:
         session.close()
 
